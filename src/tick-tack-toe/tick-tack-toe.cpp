@@ -1,7 +1,7 @@
 ﻿#include <memory>
 #include <iostream>
 
-//変えない
+
 class Mass {
 public:
 	enum status {
@@ -34,7 +34,6 @@ public:
 public:
 	enum type {
 		TYPE_ORDERED = 0,
-		TYPE_ALPHA_BETA = 1,
 	};
 
 	static AI* createAi(type type);
@@ -49,28 +48,10 @@ public:
 	bool think(Board& b);
 };
 
-//アルファベータ法
-class AI_alpha_beta : public AI {
-private:
-	//手の評価を行う
-	int evaluate(int alpha, int beta, Board& b, Mass::status current, int& best_x, int& best_y);
-public:
-	AI_alpha_beta() {}
-	~AI_alpha_beta() {}
-
-	bool think(Board& b);
-};
-
-//AI生成
 AI* AI::createAi(type type)
 {
 	switch (type) {
-	case TYPE_ORDERED:
-		return new AI_ordered();
-		break;
-	case TYPE_ALPHA_BETA:
-		return new AI_alpha_beta();
-		break;
+		// case TYPE_ORDERED:
 	default:
 		return new AI_ordered();
 		break;
@@ -82,7 +63,6 @@ AI* AI::createAi(type type)
 class Board
 {
 	friend class AI_ordered;
-	friend class AI_alpha_beta;
 
 public:
 	enum WINNER {
@@ -201,7 +181,6 @@ public:
 	}
 };
 
-//AI_orderedの思考
 bool AI_ordered::think(Board& b)
 {
 	for (int y = 0; y < Board::BOARD_SIZE; y++) {
@@ -214,58 +193,12 @@ bool AI_ordered::think(Board& b)
 	return false;
 }
 
-//AI_alpha_betaの思考
-bool AI_alpha_beta::think(Board& b)
-{
-	int best_x, best_y;
 
-	if (evaluate(-10000, 10000, b, Mass::ENEMY, best_x, best_y) <= -9999)
-		return false; //打てる手はなかった
-
-	return b.mass_[best_x][best_y].put(Mass::ENEMY);
-}
-
-int AI_alpha_beta::evaluate(int alpha, int beta, Board& b, Mass::status current, int& best_x, int& best_y)
-{
-	Mass::status next = (current == Mass::ENEMY) ? Mass::PLAYER : Mass::ENEMY;
-	//死活判定
-	int r = b.calc_result();
-	if (r == current) return +10000; //呼び出し側の勝ち
-	if (r == next) return -10000; //呼び出し側の負け
-	if (r == Board::DRAW) return 0; //引き分け
-
-	int score_max = -9999; //打たないで投了
-
-	for (int y = 0; y < Board::BOARD_SIZE; y++) {
-		for (int x = 0; x < Board::BOARD_SIZE; x++) {
-			Mass& m = b.mass_[y][x];
-			if (m.getStatus() != Mass::BLANK) continue;
-
-			m.setStatus(current); //次の手を打つ
-			int dummy;
-			int score = -evaluate(-beta, -alpha, b, next, dummy, dummy);
-			m.setStatus(Mass::BLANK); //手を戻す
-
-			if(beta < score) {
-				return (score_max < score) ? score : score_max; //最悪の値より悪い
-			}
-
-			if (score_max < score) {
-				score_max = score;
-				alpha = (alpha < score_max) ? score_max : alpha; //α値を更新
-				best_x = x;
-				best_y = y;
-			}
-		}
-	}
-	return score_max;
-}
 
 class Game
 {
 private:
-	//ここでAI切り替え
-	const AI::type ai_type = AI::TYPE_ALPHA_BETA;
+	const AI::type ai_type = AI::TYPE_ORDERED;
 
 	Board board_;
 	Board::WINNER winner_ = Board::NOT_FINISED;
@@ -304,7 +237,6 @@ public:
 
 
 
-//変えない
 void show_start_message()
 {
 	std::cout << "========================" << std::endl;
@@ -314,7 +246,6 @@ void show_start_message()
 	std::cout << "========================" << std::endl;
 }
 
-//変えない
 void show_end_message(Board::WINNER winner)
 {
 	if (winner == Board::PLAYER) {
@@ -330,7 +261,6 @@ void show_end_message(Board::WINNER winner)
 	std::cout << std::endl;
 }
 
-//変えない
 int main()
 {
 	for (;;) {// 無限ループ
